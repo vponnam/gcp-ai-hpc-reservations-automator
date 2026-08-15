@@ -1,5 +1,5 @@
 # GCP On-Demand Compute & Accelerator Reservation Automator
-> Disclaimer: This project was inspired by original scripts developed by my colleagues. I am capturing this here for easy access and do not claim original authorship of the logic.
+> Disclaimer: This project was inspired by ideas shared by my colleagues. The code is independently maintained; I want to be transparent in acknowledging that I do not claim credit for the original concept as a sign of respect.
 
 This script automates the process of securing [On-Demand Reservations](https://docs.cloud.google.com/compute/docs/instances/reservations-overview) in Google Cloud. It is particularly useful for securing high-demand resources like GPUs (H100s, L4s, RTX Pro 6000s) as well as CPU machine types (N1, N2, C3, etc.) with optional Local SSD (LSSD) storage attachments.
 
