@@ -129,6 +129,8 @@ RESERVATION_CHILD_PROJECTS="client-prod-app,analytics-engine-app" \
 ---
 
 ### 5. On-Demand Cloud TPU v5e PodSlice (`tpu_lite_podslice_v5`) — Reserve 24 Chips in `us-east1-b`
+> 📄 **Dedicated Guide:** See [TPU-v5e-Reservations.md](./TPU-v5e-Reservations.md) for complete instructions on **TPU v5e Calendar Mode (Future Reservations)** and **On-Demand creation**.
+
 Reserve **24 `tpu_lite_podslice_v5` (TPU v5e PodSlice) chips** in `us-east1-b` with `vponnam` resource prefixing and labels:
 
 ```bash
