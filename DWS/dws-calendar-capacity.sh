@@ -8,13 +8,14 @@ set -eo pipefail
 
 #TPU Variables
 # https://docs.cloud.google.com/tpu/docs/calendar-mode-reservation#limitations
-declare -a TPU_REGIONS=("us-south1" "us-east5" "us-central1" "us-east1" "asia-northeast1" "europe-west4" "us-west4") # List of TPU supported regions
-declare -a TPU_CHIP_COUNTS=(64 128 256 512) # Range of chip counts to look for
+declare -a TPU_REGIONS=("us-east1" "us-east5" "us-central1") # List of TPU supported regions
+# declare -a TPU_REGIONS=("us-south1" "us-east5" "us-central1" "us-east1" "asia-northeast1" "europe-west4" "us-west4") # List of TPU supported regions
+declare -a TPU_CHIP_COUNTS=(8 16 32 64) # Range of chip counts to look for
 declare -a TPU_VERSIONS=("V5E" "V6E") # TPU chip types
 TPU_Workloadtype="BATCH"
-start_time_range="from=2026-01-24,to=2026-06-25" # Reservation anticipated start date
-end_time_range="from=2026-03-25,to=2026-06-25" # Reservation anticipated end date
-duration_range="min=60d,max=90d" # min and max days for the reservation
+start_time_range="from=2026-11-09,to=2026-11-30" # Reservation anticipated start date
+end_time_range="from=2026-12-25,to=2026-12-30" # Reservation anticipated end date
+duration_range="min=10d,max=90d" # min and max days for the reservation
 
 # For TPU capacity
 lookup_dws_tpu_capacity() {
@@ -43,17 +44,23 @@ lookup_dws_tpu_capacity() {
 
 # GPU Variables
 # gcloud compute machine-types list --filter="name=a3-highgpu-8g" (https://docs.cloud.google.com/compute/docs/regions-zones#available)
-declare -a GPU_REGIONS=("us-west1" "us-east4" "us-east5" "us-central1" "us-east1" "asia-northeast1" "europe-west4" "us-west4") #List of GPU supported regions(https://docs.cloud.google.com/compute/docs/regions-zones#available).
-declare -a GPU_VM_COUNTS=(16 48 80) #range of chip counts to look for. Max: 80 VMs
-declare -a GPU_VERSIONS=("a3-highgpu-8g" "a3-megagpu-8g" "a4-highgpu-8g" "a3-ultragpu-8g") # GPU types
-gpu_start_time_range="from=2026-01-24,to=2026-06-25" # Reservation anticipated start date
-gpu_end_time_range="from=2026-03-25,to=2026-06-25" # Reservation anticipated end date
-gpu_duration_range="min=90d,max=90d" #min and max days for the reservation
+# declare -a GPU_REGIONS=("us-south1" "europe-west4") # Target regions for H200 lookup
+declare -a GPU_REGIONS=("us-south1" "us-west1" "us-east4" "us-east5" "us-central1" "us-east1" "asia-northeast1" "europe-west4" "us-west4") # List of GPU supported regions (https://docs.cloud.google.com/compute/docs/regions-zones#available).
+declare -a GPU_VM_COUNTS=(2 4 6 8 10) # Range of VM counts to look for (1-6 VMs = 8-48 H200 GPUs @ 8 GPUs/VM). Max: 80 VMs
+declare -a GPU_VERSIONS=("a3-ultragpu-8g") # H200 GPU machine type (8x H200 GPUs per VM)
+# declare -a GPU_VERSIONS=("a3-highgpu-8g" "a3-megagpu-8g" "a4-highgpu-8g" "a3-ultragpu-8g") # GPU types
+gpu_start_time_range="from=2026-12-01,to=2027-01-30" # Reservation anticipated start date (Dec 1 - Jan 15 to capture nearest ~90d windows)
+gpu_end_time_range="" # Optional reservation anticipated end date (leave empty to let start_time_range + duration_range determine window)
+gpu_duration_range="min=89d,max=90d" # min and max days for the reservation (~90d; min=89d captures 89d16h DWS windows)
 
 # For GPU capacity
 # https://docs.cloud.google.com/compute/docs/regions-zones#available
 lookup_dws_gpu_capacity() {
     gpu_capacity=""
+    local end_time_flag=()
+    if [[ -n "$gpu_end_time_range" ]]; then
+        end_time_flag=("--end-time-range=$gpu_end_time_range")
+    fi
     for r in "${GPU_REGIONS[@]}"
     do 
       echo "******* Looking for GPU DWS Calendar chips availability in $r *******"
@@ -65,15 +72,14 @@ lookup_dws_gpu_capacity() {
             --machine-type=$v \
             --vm-count=$c \
             --region="$r" \
-            --start-time-range="$start_time_range" \
-            --end-time-range="$end_time_range" \
-            --duration-range="$duration_range" \
-            --format=json | jq -c --arg v "$v" --arg c "$c" '.[].recommendations.[].recommendationsPerSpec[].spec | del(.otherLocations) | select( .location != null ) | . + {gpu_version: $v, vm_count: $c}')"
+            --start-time-range="$gpu_start_time_range" \
+            "${end_time_flag[@]}" \
+            --duration-range="$gpu_duration_range" \
+            --format=json | jq -c --arg v "$v" --arg c "$c" --arg g "$((c * 8))" '.[].recommendations.[].recommendationsPerSpec.spec | del(.otherLocations) | select( .location != null ) | . + {gpu_version: $v, vm_count: $c, gpu_count: $g}')"
         done
       done
     done
-    echo $gpu_capacity
-    # echo "${gpu_capacity}" | jq -s -r '["Location", "GPU_Version", "VM_Count", "StartTime", "EndTime", "RecommendationType"] as $headers | $headers, ([$headers[] | "---------"]), (.[] | [.location, .gpu_version, .vm_count, .startTime, .endTime, .recommendationType]) | @tsv' | column -t -s $'\t'
+    echo "${gpu_capacity}" | jq -s -r '["Location", "GPU_Version", "VM_Count", "GPU_Count", "StartTime", "EndTime", "RecommendationType"] as $headers | $headers, ([$headers[] | "---------"]), (.[] | [.location, .gpu_version, .vm_count, .gpu_count, .startTime, .endTime, .recommendationType]) | @tsv' | column -t -s $'\t'
 }
 
 usage() {
