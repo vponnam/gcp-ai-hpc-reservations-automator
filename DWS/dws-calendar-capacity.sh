@@ -17,6 +17,7 @@ DEFAULT_START_TO=$(date -u -v+"${START_OFFSET_DAYS}"d +"%Y-%m-%d" 2>/dev/null ||
 
 START_TIME_RANGE=${START_TIME_RANGE:-"from=${DEFAULT_START_FROM},to=${DEFAULT_START_TO}"}
 END_TIME_RANGE=${END_TIME_RANGE:-""} # Optional: leave empty so start_time_range + duration_range determine the window
+DURATION_RANGE=${DURATION_RANGE:-"min=30d,max=90d"} # Common default duration range for both TPU and GPU
 
 # TPU Variables
 # https://docs.cloud.google.com/tpu/docs/calendar-mode-reservation#limitations
@@ -27,7 +28,7 @@ declare -a TPU_VERSIONS=("V5E" "V6E") # TPU chip types
 TPU_Workloadtype=${TPU_Workloadtype:-"BATCH"}
 start_time_range=${start_time_range:-"$START_TIME_RANGE"} # Reservation anticipated start date (defaults to T..T+60d)
 end_time_range=${end_time_range:-"$END_TIME_RANGE"}       # Optional reservation anticipated end date
-duration_range=${duration_range:-"${DURATION_RANGE:-min=10d,max=90d}"} # min and max days for the reservation
+duration_range=${duration_range:-"$DURATION_RANGE"}       # min and max days for the reservation (defaults to min=30d,max=90d)
 
 # For TPU capacity
 lookup_dws_tpu_capacity() {
@@ -68,7 +69,7 @@ declare -a GPU_VERSIONS=("a3-megagpu-8g" "a3-ultragpu-8g") # GPU machine types (
 # declare -a GPU_VERSIONS=("a3-highgpu-8g" "a3-megagpu-8g" "a4-highgpu-8g" "a3-ultragpu-8g") # GPU types
 gpu_start_time_range=${gpu_start_time_range:-"$START_TIME_RANGE"} # Reservation anticipated start date (defaults to T..T+60d)
 gpu_end_time_range=${gpu_end_time_range:-"$END_TIME_RANGE"}       # Optional reservation anticipated end date
-gpu_duration_range=${gpu_duration_range:-"${DURATION_RANGE:-min=89d,max=90d}"} # min and max days for the reservation (~90d; min=89d captures 89d16h DWS windows)
+gpu_duration_range=${gpu_duration_range:-"$DURATION_RANGE"}       # min and max days for the reservation (defaults to min=30d,max=90d)
 
 # For GPU capacity
 # https://docs.cloud.google.com/compute/docs/regions-zones#available
@@ -108,12 +109,12 @@ usage() {
     echo "Optional Environment Variable Overrides:"
     echo "  START_OFFSET_DAYS  : Days from today (T) for default start window T..T+N (default: 60)"
     echo "  START_TIME_RANGE   : Custom start window (default: \"from=${DEFAULT_START_FROM},to=${DEFAULT_START_TO}\")"
-    echo "  DURATION_RANGE     : Custom duration range (default: min=10d,max=90d for TPU; min=89d,max=90d for GPU)"
+    echo "  DURATION_RANGE     : Custom duration range for TPU & GPU (default: \"min=30d,max=90d\")"
     echo "  END_TIME_RANGE     : Optional end window constraint (default: unset)"
     echo ""
     echo "Examples:"
     echo "  $0 -t -g"
-    echo "  START_TIME_RANGE=\"from=2026-12-01,to=2026-12-30\" DURATION_RANGE=\"min=89d,max=90d\" $0 -g"
+    echo "  START_TIME_RANGE=\"from=2026-12-01,to=2026-12-30\" DURATION_RANGE=\"min=30d,max=90d\" $0 -g"
     exit 1
 }
 

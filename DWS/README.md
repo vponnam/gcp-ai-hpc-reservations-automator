@@ -56,7 +56,7 @@ zones/europe-west4-b     V5E          512         2026-02-23T09:59:00Z  2026-05-
     | :--- | :--- | :--- |
     | `START_OFFSET_DAYS` | `60` | Number of days from today (`T`) used to compute the default `from=T,to=T+N` start window |
     | `START_TIME_RANGE` | `from=<T>,to=<T+60d>` | Explicit start window override (e.g., `from=2026-12-01,to=2026-12-30`). Can also be set separately via `start_time_range` (TPU) or `gpu_start_time_range` (GPU) |
-    | `DURATION_RANGE` | `min=10d,max=90d` (TPU)<br>`min=89d,max=90d` (GPU) | Reservation duration range override (e.g., `min=30d,max=90d`). Can also be set via `duration_range` or `gpu_duration_range` |
+    | `DURATION_RANGE` | `min=30d,max=90d` | Reservation duration range override for both TPU and GPU (e.g., `min=60d,max=90d`). Can also be set via `duration_range` or `gpu_duration_range` |
     | `END_TIME_RANGE` | Empty *(auto-derived)* | Optional end-time constraint (e.g., `from=2027-03-01,to=2027-04-15`). Omitted by default so `START_TIME_RANGE` + `DURATION_RANGE` determine the window |
     | `TPU_REGIONS` / `GPU_REGIONS` | Configured in script | Regions scanned for TPU and GPU capacity |
     | `TPU_CHIP_COUNTS` / `GPU_VM_COUNTS` | Configured in script | Chip counts (TPU) or VM counts (GPU) to query |
@@ -73,7 +73,7 @@ zones/europe-west4-b     V5E          512         2026-02-23T09:59:00Z  2026-05-
     Optional Environment Variable Overrides:
       START_OFFSET_DAYS  : Days from today (T) for default start window T..T+N (default: 60)
       START_TIME_RANGE   : Custom start window (default: "from=<T>,to=<T+60d>")
-      DURATION_RANGE     : Custom duration range (default: min=10d,max=90d for TPU; min=89d,max=90d for GPU)
+      DURATION_RANGE     : Custom duration range for TPU & GPU (default: "min=30d,max=90d")
       END_TIME_RANGE     : Optional end window constraint (default: unset)
 ```
 
@@ -92,7 +92,7 @@ zones/europe-west4-b     V5E          512         2026-02-23T09:59:00Z  2026-05-
 ### Override the start date window or lookahead offset via environment variables:
 ```bash
 # Override with a custom start window and duration
-START_TIME_RANGE="from=2026-12-01,to=2026-12-30" DURATION_RANGE="min=89d,max=90d" ./dws-calendar-capacity.sh -g
+START_TIME_RANGE="from=2026-12-01,to=2026-12-30" DURATION_RANGE="min=30d,max=90d" ./dws-calendar-capacity.sh -g
 
 # Adjust the dynamic lookahead window from T+60d to T+90d
 START_OFFSET_DAYS=90 ./dws-calendar-capacity.sh -g
